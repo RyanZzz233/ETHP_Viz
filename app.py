@@ -129,7 +129,8 @@ def create_interactive_plot(df, selected_metrics, use_normalized=False, smoothin
 def create_correlation_heatmap(df, correlation_metrics):
     """
     Create an interactive correlation heatmap using Plotly
-    No filtering is done here - all selected metrics are shown
+    Shows only the lower triangle of the correlation matrix with square cells
+    No colorbar displayed
     """
     if len(correlation_metrics) < 2:
         return None
@@ -153,56 +154,46 @@ def create_correlation_heatmap(df, correlation_metrics):
         color_continuous_scale='RdBu_r',
         zmin=-1,
         zmax=1,
-        aspect="equal",  # Make it square
+        aspect="equal",  # Equal aspect ensures square cells
         title="相关性热图 (Correlation Heatmap)"
     )
     
-    # Update layout for better appearance and larger size
+    # Remove the colorbar
+    fig.update_layout(coloraxis_showscale=False)
+    
+    # Update layout for better appearance and proportions
     fig.update_layout(
         height=900,
-        width=900,
+        width=1000,  # Make it larger to fill available space
         title_font=dict(size=24),
-        margin=dict(l=60, r=60, t=100, b=60),
-        coloraxis_colorbar=dict(
-            title="Correlation",
-            title_font=dict(size=18),
-            tickfont=dict(size=16),
-            thicknessmode="pixels", 
-            thickness=25,
-            lenmode="pixels", 
-            len=600,
-            yanchor="middle",
-            y=0.5,
-            xanchor="right",
-            x=1.05
-        )
+        margin=dict(l=80, r=80, t=80, b=140),  # Balanced margins without needing extra space for colorbar
     )
     
-    # Add text annotations with the correlation values - show ALL values in the lower triangle
+    # Add text annotations with the correlation values - only for lower triangle
     annotations = []
     for i in range(len(corr_df)):
         for j in range(len(corr_df)):
-            if i > j:  # Only for lower triangle excluding diagonal
+            if i > j:  # Only for lower triangle
                 if not np.isnan(z_text.iloc[i, j]):
                     annotations.append(dict(
                         x=j,
                         y=i,
                         text=str(z_text.iloc[i, j]),
-                        font=dict(size=16, color="black", family="Arial Bold"),
+                        font=dict(size=16, color="black", family="Arial Bold"),  # Larger font size
                         showarrow=False
                     ))
     
     fig.update_layout(annotations=annotations)
     
-    # Improve axis labels
+    # Improve axis labels with more space for readability
     fig.update_xaxes(
-        tickfont=dict(size=14),
+        tickfont=dict(size=14),  # Larger font size
         tickangle=45,  # Angle the x-axis labels for better readability
         side="bottom"
     )
     
     fig.update_yaxes(
-        tickfont=dict(size=14)
+        tickfont=dict(size=14)  # Larger font size
     )
     
     return fig
@@ -394,14 +385,14 @@ selected_metrics = st.sidebar.multiselect(
 # User selects metrics for correlation heatmap
 st.sidebar.header("Correlation Analysis")
 
-# Add correlation threshold slider
+# Add correlation threshold slider with improved label
 correlation_threshold = st.sidebar.slider(
-    "Correlation Significance Threshold",
+    "Correlation Significance Threshold (|r|)",  # Added |r| to emphasize absolute value
     min_value=0.0,
     max_value=1.0,
     value=0.3,  # Default to filter out weak correlations (-0.3 to 0.3)
     step=0.05,
-    help="Only show metrics with correlation to ETH price stronger than this threshold (absolute value). Set to 0 to show all metrics."
+    help="Only show metrics with correlation to ETH price stronger than this threshold (absolute value). Both positive and negative correlations are considered equally significant."
 )
 
 # Filter metrics based on correlation with ETH price
@@ -420,9 +411,9 @@ if 'eth_usd_price' in available_metrics:
         if corr > correlation_threshold:
             significant_metrics.append(metric)
     
-    # Display info about the filtered metrics
+    # Display improved info about the filtered metrics
     if correlation_threshold > 0:
-        st.sidebar.info(f"Found {len(significant_metrics)-1} metrics with correlation > {correlation_threshold} to ETH price")
+        st.sidebar.info(f"Found {len(significant_metrics)-1} metrics with |correlation| > {correlation_threshold} to ETH price (including both positive and negative correlations)")
     
     # Default to metrics with significant correlation to ETH price
     default_corr_metrics = significant_metrics
@@ -471,6 +462,8 @@ with tab2:
         # If eth_usd_price is included, show correlations with it specifically first
         if 'eth_usd_price' in correlation_metrics:
             st.subheader("与以太坊价格 (ETH Price) 的相关性")
+            # Add explanatory caption for correlation interpretation
+            st.caption("Positive values indicate metrics that tend to increase when ETH price increases. Negative values indicate metrics that tend to decrease when ETH price increases.")
             
             # Create ETH price correlation heatmap
             eth_corr_fig = create_eth_price_correlation_heatmap(df, correlation_metrics)
