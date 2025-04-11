@@ -257,19 +257,7 @@ def create_eth_price_correlation_heatmap(df, correlation_metrics):
         width=max(400, len(metrics) * 80),  # Adjust width based on number of metrics
         annotations=annotations,
         margin=dict(l=60, r=60, t=80, b=60),
-        coloraxis_colorbar=dict(
-            title="Correlation",
-            title_font=dict(size=18),
-            tickfont=dict(size=16),
-            thicknessmode="pixels", 
-            thickness=25,
-            lenmode="pixels", 
-            len=200,
-            yanchor="middle",
-            y=0.5,
-            xanchor="right",
-            x=1.05
-        )
+        coloraxis_showscale=False  # Remove the colorbar
     )
     
     # Improve axis labels
@@ -390,7 +378,7 @@ correlation_threshold = st.sidebar.slider(
     "Correlation Significance Threshold (|r|)",  # Added |r| to emphasize absolute value
     min_value=0.0,
     max_value=1.0,
-    value=0.3,  # Default to filter out weak correlations (-0.3 to 0.3)
+    value=0.7,  # Default to filter out
     step=0.05,
     help="Only show metrics with correlation to ETH price stronger than this threshold (absolute value). Both positive and negative correlations are considered equally significant."
 )
